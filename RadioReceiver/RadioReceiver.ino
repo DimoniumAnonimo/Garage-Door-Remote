@@ -71,6 +71,8 @@ void loop() {
         {
           Serial.println("response confirmed");
           enact_request();
+          active_request = 0;
+          awaiting_response = false;
         }
         else
         {
