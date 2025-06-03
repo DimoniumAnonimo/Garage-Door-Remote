@@ -144,8 +144,7 @@ static void send_request()
 
 static void set_prompt_response(unsigned long prompt)
 {
-  prompt_response = 0xFFFFFFFF - prompt;
-  //prompt_response = calculate_response(prompt);
+  prompt_response = calculate_response(prompt);
   Serial.print("prompt: ");
   Serial.print(prompt);
   Serial.print(" response: ");

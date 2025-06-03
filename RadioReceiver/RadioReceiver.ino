@@ -153,9 +153,9 @@ static bool valid_request()
 
 static void set_prompt_and_response()
 {
-  expected_response = 0xFFFFFFFF - prompt;
-  //expected_response = calculate_response(prompt);
   prompt = 0;
+  //prompt = millis();
+  expected_response = calculate_response(prompt);
   Serial.print("prompt: ");
   Serial.print(prompt);
   Serial.print(" expected response: ");
