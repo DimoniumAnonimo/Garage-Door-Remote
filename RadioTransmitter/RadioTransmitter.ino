@@ -7,16 +7,16 @@
 #define CE_PIN 7
 #define CSN_PIN 8
 #define GARAGE_RX_NDX 0
-#define GARAGE_RX_ADDR "1Node"
+#define GARAGE_RX_ADDR {0xe2, 0x5a, 0x5b, 0x22, 0x51}
 #define CAR_TX_NDX 1
-#define CAR_TX_ADDR "2Node"
+#define CAR_TX_ADDR {0x5c, 0x94, 0xe6, 0x08, 0x74}
 #define HOUSE_TX_NDX 2
-#define HOUSE_TX_ADDR "3Node"
+#define HOUSE_TX_ADDR {0xeb, 0xf8, 0x5e, 0x1a, 0x54}
 #define RUN_LEFT_REQ 0x12345678
 #define RUN_RIGHT_REQ 0x87654321
 #define RUN_BOTH_REQ 0x0f1e2d3c
 #define REQUEST_TIMEOUT 5000
-#define RETRY_TRASNMISSION 1000
+#define RETRY_TRASNMISSION 2000
 #define PAYLOAD_SIZE sizeof(unsigned long)
 
 static unsigned long get_next_request(void);
@@ -34,7 +34,7 @@ enum request_state
 };
 
 RF24 radio(CE_PIN, CSN_PIN);
-uint8_t pipe_addr[][6] = { GARAGE_RX_ADDR, CAR_TX_ADDR, HOUSE_TX_ADDR };
+uint8_t pipe_addr[][5] = { GARAGE_RX_ADDR, CAR_TX_ADDR, HOUSE_TX_ADDR };
 unsigned long current_request;
 unsigned long prompt;
 unsigned long prompt_response;
@@ -51,10 +51,27 @@ void setup() {
     //while (1) {}  // hold in infinite loop
   }
   
+  char cstr[64];
+  sprintf(cstr, "Tx Addr: 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X",
+    pipe_addr[CAR_TX_NDX][0],
+    pipe_addr[CAR_TX_NDX][1],
+    pipe_addr[CAR_TX_NDX][2],
+    pipe_addr[CAR_TX_NDX][3],
+    pipe_addr[CAR_TX_NDX][4]);
+  Serial.println(cstr);
+  
+  sprintf(cstr, "Rx Addr: 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X",
+    pipe_addr[GARAGE_RX_NDX][0],
+    pipe_addr[GARAGE_RX_NDX][1],
+    pipe_addr[GARAGE_RX_NDX][2],
+    pipe_addr[GARAGE_RX_NDX][3],
+    pipe_addr[GARAGE_RX_NDX][4]);
+  Serial.println(cstr);
+  
   radio.setPALevel(RF24_PA_LOW);
   radio.setPayloadSize(PAYLOAD_SIZE);
   radio.openWritingPipe(pipe_addr[CAR_TX_NDX]);
-  radio.openReadingPipe(0, pipe_addr[GARAGE_RX_NDX]);
+  radio.openReadingPipe(1, pipe_addr[GARAGE_RX_NDX]);
 
   radio.stopListening();
 }
@@ -147,7 +164,7 @@ static void set_prompt_response(unsigned long prompt)
   prompt_response = calculate_response(prompt);
   Serial.print("prompt: ");
   Serial.print(prompt);
-  Serial.print(" response: ");
+  Serial.print(" || response: ");
   Serial.println(prompt_response);
 }
 
