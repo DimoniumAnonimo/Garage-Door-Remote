@@ -63,11 +63,11 @@ void setup() {
     pipe_addr[CAR_TX_NDX][4]);
   Serial.println(cstr);
   
-  radio.setPALevel(RF24_PA_LOW);
+  radio.setPALevel(RF24_PA_HIGH);
   radio.setPayloadSize(PAYLOAD_SIZE);
   radio.openWritingPipe(pipe_addr[GARAGE_RX_NDX]);
   radio.openReadingPipe(1, pipe_addr[CAR_TX_NDX]);
-  //radio.openReadingPipe(1, pipe_addr[HOUSE_TX_NDX]);
+  radio.openReadingPipe(2, pipe_addr[HOUSE_TX_NDX]);
   
   radio.startListening();
 }
@@ -111,7 +111,8 @@ void loop() {
     }
     else
     {
-      Serial.println("Malformed payload");
+      Serial.print("bad payload: ");
+      Serial.println(bytes);
     }
   }
   else if (awaiting_response)

@@ -15,32 +15,18 @@
 #define RUN_LEFT_REQ 0x12345678
 #define RUN_RIGHT_REQ 0x87654321
 #define RUN_BOTH_REQ 0x0f1e2d3c
-#define REQUEST_TIMEOUT 5000
+#define REQUEST_TIMEOUT 7000
 #define RETRY_TRASNMISSION 2000
 #define PAYLOAD_SIZE sizeof(unsigned long)
 
-static unsigned long get_next_request(void);
+static unsigned long get_next_request(unsigned long);
 static unsigned long millis_elapsed_since(unsigned long);
-static void send_request(void);
-static void set_prompt_response(unsigned long);
-static void send_prompt_response(void);
-
-enum request_state
-{
-	PAUSE_BETWEEN_REQUESTS,
-	INIT_REQUEST,
-	AWAIT_PROMPT,
-	SEND_RESPONSE
-};
+static void send_request(unsigned long*);
+static unsigned long get_prompt_response(unsigned long);
+static void send_prompt_response(unsigned long*);
 
 RF24 radio(CE_PIN, CSN_PIN);
 uint8_t pipe_addr[][5] = { GARAGE_RX_ADDR, CAR_TX_ADDR, HOUSE_TX_ADDR };
-unsigned long current_request;
-unsigned long prompt;
-unsigned long prompt_response;
-unsigned long request_sent_millis;
-unsigned long start_of_request_millis;
-enum request_state current_state = PAUSE_BETWEEN_REQUESTS;
 
 void setup() {
   Serial.begin(115200);
@@ -68,7 +54,7 @@ void setup() {
     pipe_addr[GARAGE_RX_NDX][4]);
   Serial.println(cstr);
   
-  radio.setPALevel(RF24_PA_LOW);
+  radio.setPALevel(RF24_PA_HIGH);
   radio.setPayloadSize(PAYLOAD_SIZE);
   radio.openWritingPipe(pipe_addr[CAR_TX_NDX]);
   radio.openReadingPipe(1, pipe_addr[GARAGE_RX_NDX]);
@@ -77,63 +63,57 @@ void setup() {
 }
 
 void loop() {
-  switch (current_state)
+  unsigned long prompt_response;
+  unsigned long last_send;
+  static unsigned long current_request = 0;
+
+  delay(10000);
+  unsigned long new_req_millis = millis();
+  current_request = get_next_request(current_request);
+  Serial.print("new request start: ");
+  Serial.println(current_request);
+  bool prompt_rec = false;
+  while (!prompt_rec && millis_elapsed_since(new_req_millis) < REQUEST_TIMEOUT)
   {
-    default:
-    case PAUSE_BETWEEN_REQUESTS:
-      delay(10000);
-      start_of_request_millis = millis();
-      current_state = INIT_REQUEST;
-      break;
-    case INIT_REQUEST:
-      current_request = get_next_request();
-      Serial.print("new request start: ");
-      Serial.println(current_request);
-      send_request();
-      current_state = AWAIT_PROMPT;
-      break;
-    case AWAIT_PROMPT:
+    Serial.println("send req");
+    send_request(&current_request);
+    last_send = millis();
+    while (!prompt_rec && millis_elapsed_since(last_send) < RETRY_TRASNMISSION)
+    {
       uint8_t pipe;
       if (radio.available(&pipe))
       {
         uint8_t bytes = radio.getPayloadSize();
         if (bytes == PAYLOAD_SIZE)
         {
-          unsigned long prompt;
-          radio.read(&prompt, bytes);
-          radio.stopListening();
-          set_prompt_response(prompt);
-          current_state = SEND_RESPONSE;
+          unsigned long prompt_in;
+          radio.read(&prompt_in, bytes);
+          prompt_response = get_prompt_response(prompt_in);
+          prompt_rec = true;
         }
         else
         {
-          Serial.println("malformed payload");
+          Serial.println("bad payload");
         }
       }
-      else if (millis_elapsed_since(request_sent_millis) >= RETRY_TRASNMISSION)
-      {
-        Serial.println("Same request resend");
-        send_request();
-      }
-      break;
-    case SEND_RESPONSE:
-      for (int i = 0; i < 5; i++)
-      {
-        send_prompt_response();
-        delay(RETRY_TRASNMISSION);
-      }
-      current_state = PAUSE_BETWEEN_REQUESTS;
-      break;
+    }
   }
-
-  if ((current_state != PAUSE_BETWEEN_REQUESTS) && (millis_elapsed_since(start_of_request_millis) >= REQUEST_TIMEOUT))
+  if (prompt_rec)
+  {
+    for (int i = 0; i < 10; i++)
+    {
+      Serial.println("send response");
+      send_prompt_response(&prompt_response);
+      delay(200);
+    }
+  }
+  else
   {
     Serial.println("Req timeout");
-    current_state = PAUSE_BETWEEN_REQUESTS;
   }
 }
 
-static unsigned long get_next_request()
+static unsigned long get_next_request(unsigned long current_request)
 {
   switch (current_request)
   {
@@ -150,28 +130,28 @@ static unsigned long get_next_request()
   }
 }
 
-static void send_request()
+static void send_request(unsigned long *current_request)
 {
   radio.stopListening();
-  bool report = radio.write(&current_request, PAYLOAD_SIZE);
+  bool report = radio.write(current_request, PAYLOAD_SIZE);
   delay(5);
   radio.startListening();
-  request_sent_millis = millis();
 }
 
-static void set_prompt_response(unsigned long prompt)
+static unsigned long get_prompt_response(unsigned long prompt)
 {
-  prompt_response = calculate_response(prompt);
+  unsigned long prompt_response = calculate_response(prompt);
   Serial.print("prompt: ");
   Serial.print(prompt);
   Serial.print(" || response: ");
   Serial.println(prompt_response);
+  return prompt_response;
 }
 
-static void send_prompt_response()
+static void send_prompt_response(unsigned long *prompt_response)
 {
   radio.stopListening();
-  bool report = radio.write(&prompt_response, PAYLOAD_SIZE);
+  bool report = radio.write(prompt_response, PAYLOAD_SIZE);
 }
 
 static unsigned long millis_elapsed_since(unsigned long then)
