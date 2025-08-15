@@ -93,6 +93,10 @@ void loop()
 						unsigned long prompt_in;
 						radio.read(&prompt_in, bytes);
 						prompt_response = calculate_response(prompt_in);
+						Serial.print("prompt: 0x");
+						Serial.print(prompt_in, HEX);
+						Serial.print(" resp: 0x");
+						Serial.println(prompt_response, HEX);
 						attempts_remaining = NUM_ATTEMPTS;
 						current_step = SM_SEND_RESPONSE;
 					}
@@ -106,7 +110,7 @@ void loop()
 				}
 				else
 				{
-					//Serial.println("failed to receive prompt");
+					Serial.println("failed to receive prompt");
 					current_step = SM_IDLE;
 				}
 			}
@@ -127,10 +131,13 @@ void loop()
 					{
 						unsigned long result_in;
 						radio.read(&result_in, bytes);
+						Serial.print("confirmation: 0x");
+						Serial.println(result_in, HEX);
 						//if (result_in == CMD_SUCCESS)
 						if (1)
 						{
-							Serial.println("request successful");
+							//Serial.println("request successful");
+							Serial.println("");
 							current_step = SM_IDLE;
 						}
 					}
