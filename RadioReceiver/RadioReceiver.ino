@@ -10,13 +10,13 @@
 // common
 #define GARAGE_ADDR {0xe2, 0x5a, 0x5b, 0x22, 0x51}
 #define CAR_ADDR {0x5c, 0x94, 0xe6, 0x08, 0x74}
-#define HOUSE_ADDR {0xeb, 0xf8, 0x5e, 0x1a, 0x54}
+#define HOUSE_ADDR {0xeb, 0x94, 0xe6, 0x08, 0x74}
 #define RUN_LEFT_REQ 0x12345678
 #define RUN_RIGHT_REQ 0x87654321
 #define RUN_BOTH_REQ 0x0f1e2d3c
 #define CMD_SUCCESS 0xA6A543A4
 #define PAYLOAD_SIZE sizeof(unsigned long)
-// transmitter
+// receiver
 #define CAR_PIPE 1
 #define HOUSE_PIPE 2
 #define TX_TIMEOUT 500
@@ -57,17 +57,11 @@ void setup() {
     delay(1000);
   }
   
-  radio.setPALevel(RF24_PA_LOW);
+  radio.setPALevel(RF24_PA_MIN);
   radio.setPayloadSize(PAYLOAD_SIZE);
   radio.openWritingPipe(garage_addr_bytes);
   radio.openReadingPipe(CAR_PIPE, car_addr_bytes);
-  //radio.openReadingPipe(HOUSE_PIPE, house_addr_bytes);
-  //uint8_t wr_addr[5] = {0x11, 0x22, 0x33, 0x44, 0x55};
-  //uint8_t rd_addr[5] = {0x55, 0x44, 0x33, 0x22, 0x11};
-  //uint8_t b_addr[5] = {0x15, 0x24, 0x33, 0x42, 0x51};
-  //radio.openWritingPipe(wr_addr);
-  //radio.openReadingPipe(1, rd_addr);
-  //radio.openReadingPipe(2, b_addr);
+  radio.openReadingPipe(HOUSE_PIPE, house_addr_bytes);
 
   radio.startListening();
   
@@ -94,7 +88,7 @@ void loop()
 						{
 							prompt = millis();
 							expected_response = calculate_response(prompt);
-              Serial.print("req: 0x");
+              Serial.print("received 0x");
               Serial.print(current_command, HEX);
               Serial.print(" prompt: 0x");
               Serial.print(prompt, HEX);
@@ -207,7 +201,7 @@ static bool valid_request(unsigned long active_request)
   }
   Serial.print("command not recognized: 0x");
   Serial.println(active_request, HEX);
-  //return false;
+  return false;
   return true;
 }
 
