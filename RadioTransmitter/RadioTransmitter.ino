@@ -71,7 +71,9 @@ void loop()
 	switch (current_step)
 	{
 		case SM_IDLE:
-			delay(5000);
+			Serial.println("");
+			delay(10000);
+			radio.flush_rx();
 			get_next_request(&current_request);
 			attempts_remaining = NUM_ATTEMPTS;
 			current_step = SM_SEND_COMMAND;
