@@ -133,11 +133,9 @@ void loop()
 						radio.read(&result_in, bytes);
 						Serial.print("confirmation: 0x");
 						Serial.println(result_in, HEX);
-						//if (result_in == CMD_SUCCESS)
-						if (1)
+						if (result_in == CMD_SUCCESS)
 						{
-							//Serial.println("request successful");
-							Serial.println("");
+							Serial.println("request successful");
 							current_step = SM_IDLE;
 						}
 					}
@@ -185,7 +183,7 @@ static void radio_send_data(unsigned long data)
   delay(5);
   Serial.print("sending 0x");
   Serial.println(data, HEX);
-  bool report = radio.write(data, PAYLOAD_SIZE);
+  bool report = radio.write(&data, PAYLOAD_SIZE);
   delay(5);
   radio.startListening();
 }

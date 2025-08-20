@@ -119,8 +119,7 @@ void loop()
 						radio.read(&prompt_response, bytes);
             Serial.print("resp: 0x");
             Serial.println(prompt_response, HEX);
-						//if (prompt_response == expected_response)
-						if (1)
+						if (prompt_response == expected_response)
 						{
 							enact_command(current_command);
 							current_step = SM_CONFIRM_RESPONSE;
@@ -142,8 +141,7 @@ void loop()
 			}
 			break;
 		case SM_CONFIRM_RESPONSE:
-			//for(int i = 0; i < NUM_ATTEMPTS; i++)
-			for(int i = 0; i < 1; i++)
+			for(int i = 0; i < NUM_ATTEMPTS; i++)
 			{
 				radio_send_data(CMD_SUCCESS);
 				delay(TX_TIMEOUT);
@@ -162,7 +160,7 @@ static void radio_send_data(unsigned long data)
   Serial.print("sending 0x");
   Serial.println(data, HEX);
   radio.stopListening(garage_addr_bytes);
-  bool report = radio.write(data, PAYLOAD_SIZE);
+  bool report = radio.write(&data, PAYLOAD_SIZE);
   delay(5);
   radio.startListening();
 }
@@ -181,7 +179,7 @@ static void enact_command(unsigned long active_request)
       Serial.println("run both accepted");
       break;
     default:
-      //Serial.println("Error: unrecognized command");
+      Serial.println("Error: unrecognized command");
       break;
   }
 }
@@ -203,10 +201,9 @@ static bool valid_request(unsigned long active_request)
     Serial.println("run both recognized");
     return true;
   }
-  //Serial.print("command not recognized: 0x");
-  //Serial.println(active_request, HEX);
-  //return false;
-  return true;
+  Serial.print("command not recognized: 0x");
+  Serial.println(active_request, HEX);
+  return false;
 }
 
 static unsigned long millis_elapsed_since(unsigned long then)
